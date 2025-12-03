@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -9,6 +9,8 @@
 </style>
 </head>
 <body>
+  <h1>Enjoy this game</h1>
+  <h2>Made by Ian</h2>
 <canvas id="game" width="800" height="400"></canvas>
 <script>
 const canvas = document.getElementById('game');
