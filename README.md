@@ -1,11 +1,22 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Cube Flipper</title>
 <style>
-  html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; background: #1e1e1e; display: flex; justify-content: center; align-items: center; }
-  canvas { background: linear-gradient(#2b2b2b, #1e1e1e); display: block; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    background: #1e1e1e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  canvas {
+    background: linear-gradient(#2b2b2b, #1e1e1e);
+    display: block;
+  }
 </style>
 </head>
 <body>
@@ -14,21 +25,36 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-let BASE_WIDTH = 800;
-let BASE_HEIGHT = 400;
+const BASE_WIDTH = 800;
+const BASE_HEIGHT = 400;
 
-// Scale canvas to window
+let scale = 1;
+let offsetX = 0;
+let offsetY = 0;
+
 function resizeCanvas() {
+    const windowRatio = window.innerWidth / window.innerHeight;
+    const gameRatio = BASE_WIDTH / BASE_HEIGHT;
+
+    if (windowRatio > gameRatio) {
+        scale = window.innerHeight / BASE_HEIGHT;
+        offsetX = (window.innerWidth - BASE_WIDTH * scale) / 2;
+        offsetY = 0;
+    } else {
+        scale = window.innerWidth / BASE_WIDTH;
+        offsetX = 0;
+        offsetY = (window.innerHeight - BASE_HEIGHT * scale) / 2;
+    }
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// Scale functions
-function scaleX(x) { return x * canvas.width / BASE_WIDTH; }
-function scaleY(y) { return y * canvas.height / BASE_HEIGHT; }
-function scaleSize(s) { return s * canvas.width / BASE_WIDTH; }
+// Helper to convert game coords to canvas coords
+function toCanvasX(x) { return x * scale + offsetX; }
+function toCanvasY(y) { return y * scale + offsetY; }
+function toCanvasSize(s) { return s * scale; }
 
 let player = {
     x: 50,
@@ -51,7 +77,7 @@ let score = 0;
 let particles = [];
 let gameStarted = false;
 
-// Jump handler
+// Jump / start handler
 function jump() {
     if (!gameStarted) {
         gameStarted = true;
@@ -70,8 +96,8 @@ canvas.addEventListener('touchstart', jump);
 
 // Spawn obstacles
 function spawnObstacle() {
-    let height = 20 + Math.random() * 60;
-    let width = 20 + Math.random() * 40;
+    const height = 20 + Math.random() * 60;
+    const width = 20 + Math.random() * 40;
     obstacles.push({ x: BASE_WIDTH, y: BASE_HEIGHT - height, width, height });
 }
 
@@ -87,6 +113,7 @@ function resetGame() {
     gameSpeed = 6;
     score = 0;
     particles = [];
+    gameStarted = false;
 }
 
 // Create landing particles
@@ -107,16 +134,13 @@ function createParticles(x, y) {
 function update() {
     if (!gameStarted || gameOver) return;
 
-    // Player physics
     player.dy += gravity;
     player.y += player.dy;
 
-    // Flip animation
     if (!player.grounded && player.jumping) {
         player.rotation += 0.3;
     }
 
-    // Ground collision
     if (player.y + player.height >= BASE_HEIGHT) {
         if (!player.grounded) createParticles(player.x + player.width/2, BASE_HEIGHT - 5);
         player.y = BASE_HEIGHT - player.height;
@@ -126,12 +150,10 @@ function update() {
         player.jumping = false;
     }
 
-    // Spawn obstacles
     if (frame % 80 === 0) spawnObstacle();
     obstacles.forEach(ob => ob.x -= gameSpeed);
     obstacles = obstacles.filter(ob => ob.x + ob.width > 0);
 
-    // Collision detection
     for (let ob of obstacles) {
         if (player.x < ob.x + ob.width &&
             player.x + player.width > ob.x &&
@@ -141,7 +163,6 @@ function update() {
         }
     }
 
-    // Particles update
     particles.forEach(p => {
         p.x += p.dx;
         p.y += p.dy;
@@ -150,10 +171,8 @@ function update() {
     });
     particles = particles.filter(p => p.alpha > 0);
 
-    // Increase speed over time
     if (frame % 300 === 0) gameSpeed += 0.5;
 
-    // Score
     score = Math.floor(frame / 5);
     frame++;
 }
@@ -163,15 +182,14 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (!gameStarted) {
-        // Intro screen
         ctx.fillStyle = 'white';
-        ctx.font = `${scaleSize(60)}px Arial`;
+        ctx.font = `${60 * scale}px Arial`;
         ctx.textAlign = 'center';
-        ctx.fillText('Cube Flipper', canvas.width/2, scaleY(150));
+        ctx.fillText('Cube Flipper', canvas.width/2, toCanvasY(150));
 
-        ctx.font = `${scaleSize(24)}px Arial`;
-        ctx.fillText('Enjoy the game! Made by Ian', canvas.width/2, scaleY(220));
-        ctx.fillText('Tap or Press Space to Start', canvas.width/2, scaleY(270));
+        ctx.font = `${24 * scale}px Arial`;
+        ctx.fillText('Enjoy the game! Made by Ian', canvas.width/2, toCanvasY(220));
+        ctx.fillText('Tap or Press Space to Start', canvas.width/2, toCanvasY(270));
         return;
     }
 
@@ -179,45 +197,44 @@ function draw() {
     for (let i = 0; i < BASE_WIDTH; i += 40) {
         ctx.strokeStyle = '#333';
         ctx.beginPath();
-        ctx.moveTo(scaleX(i - (frame * 2 % 40)), 0);
-        ctx.lineTo(scaleX(i - (frame * 2 % 40)), canvas.height);
+        ctx.moveTo(toCanvasX(i - (frame * 2 % 40)), 0);
+        ctx.lineTo(toCanvasX(i - (frame * 2 % 40)), canvas.height);
         ctx.stroke();
     }
 
     // Ground
     ctx.fillStyle = '#555';
-    ctx.fillRect(0, scaleY(BASE_HEIGHT - 10), canvas.width, scaleY(10));
+    ctx.fillRect(0, toCanvasY(BASE_HEIGHT - 10), canvas.width, toCanvasSize(10));
 
-    // Player with rotation
+    // Player
     ctx.save();
-    ctx.translate(scaleX(player.x + player.width/2), scaleY(player.y + player.height/2));
+    ctx.translate(toCanvasX(player.x + player.width/2), toCanvasY(player.y + player.height/2));
     ctx.rotate(player.rotation);
     ctx.fillStyle = '#00ffcc';
-    ctx.fillRect(-scaleSize(player.width)/2, -scaleSize(player.height)/2, scaleSize(player.width), scaleSize(player.height));
+    ctx.fillRect(-toCanvasSize(player.width)/2, -toCanvasSize(player.height)/2, toCanvasSize(player.width), toCanvasSize(player.height));
     ctx.restore();
 
     // Obstacles
     ctx.fillStyle = '#ff4c4c';
-    obstacles.forEach(ob => ctx.fillRect(scaleX(ob.x), scaleY(ob.y), scaleSize(ob.width), scaleSize(ob.height)));
+    obstacles.forEach(ob => ctx.fillRect(toCanvasX(ob.x), toCanvasY(ob.y), toCanvasSize(ob.width), toCanvasSize(ob.height)));
 
     // Particles
     particles.forEach(p => {
         ctx.globalAlpha = p.alpha;
         ctx.fillStyle = 'yellow';
-        ctx.fillRect(scaleX(p.x), scaleY(p.y), scaleSize(p.size), scaleSize(p.size));
+        ctx.fillRect(toCanvasX(p.x), toCanvasY(p.y), toCanvasSize(p.size), toCanvasSize(p.size));
         ctx.globalAlpha = 1;
     });
 
     // Score
     ctx.fillStyle = 'white';
-    ctx.font = `${scaleSize(20)}px Arial`;
-    ctx.fillText('Score: ' + score, scaleX(10), scaleY(60));
+    ctx.font = `${20 * scale}px Arial`;
+    ctx.fillText('Score: ' + score, toCanvasX(10), toCanvasY(60));
 
-    // Game Over
     if (gameOver) {
         ctx.fillStyle = 'white';
-        ctx.font = `${scaleSize(40)}px Arial`;
-        ctx.fillText('Game Over! Tap to Restart', scaleX(80), scaleY(200));
+        ctx.font = `${40 * scale}px Arial`;
+        ctx.fillText('Game Over! Tap to Restart', toCanvasX(80), toCanvasY(200));
     }
 }
 
