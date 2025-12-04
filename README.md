@@ -1,5 +1,4 @@
 
-<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Cube Jumper</title>
@@ -7,7 +6,7 @@
 <style>
   body { margin: 0; overflow: hidden; background: #1e1e1e; display: flex; justify-content: center; align-items: center; height: 100vh; }
   canvas { display: block; background: linear-gradient(#2b2b2b, #1e1e1e); }
-  .bright {color: white;}
+  .bright {color: white; }
 </style>
 
 <body>
