@@ -3,14 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <title>Cube Jumper</title>
+</head>
 <style>
   body { margin: 0; overflow: hidden; background: #1e1e1e; display: flex; justify-content: center; align-items: center; height: 100vh; }
   canvas { display: block; background: linear-gradient(#2b2b2b, #1e1e1e); }
+  .bright {color: white;}
 </style>
-</head>
+
 <body>
-  <h1>Enjoy this game</h1>
-  <h2>Made by Ian</h2>
+  <h1 class="bright">Enjoy this game</h1>
+  <h2 class="bright">Made by Ian</h2>
 <canvas id="game" width="800" height="400"></canvas>
 <script>
 const canvas = document.getElementById('game');
