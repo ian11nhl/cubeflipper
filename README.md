@@ -199,15 +199,18 @@ function draw() {
         ctx.globalAlpha = 1;
     });
 
-    // Score
+    // Score (top-left, safe)
     ctx.fillStyle = 'white';
     ctx.font = `20px Arial`;
-    ctx.fillText('Score: ' + score, 10, 60);
+    ctx.textAlign = 'left';
+    ctx.fillText('Score: ' + score, 10, 30);
 
+    // Game Over (centered)
     if (gameOver) {
         ctx.fillStyle = 'white';
         ctx.font = `40px Arial`;
-        ctx.fillText('Game Over! Tap to Restart', 80, 200);
+        ctx.textAlign = 'center';
+        ctx.fillText('Game Over! Tap to Restart', BASE_WIDTH / 2, BASE_HEIGHT / 2);
     }
 }
 
