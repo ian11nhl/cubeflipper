@@ -21,41 +21,13 @@
 </style>
 </head>
 <body>
-<canvas id="game"></canvas>
+<canvas id="game" width="800" height="400"></canvas>
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
 const BASE_WIDTH = 800;
 const BASE_HEIGHT = 400;
-
-let scale = 1;
-let offsetX = 0;
-let offsetY = 0;
-
-function resizeCanvas() {
-    const windowRatio = window.innerWidth / window.innerHeight;
-    const gameRatio = BASE_WIDTH / BASE_HEIGHT;
-
-    if (windowRatio > gameRatio) {
-        scale = window.innerHeight / BASE_HEIGHT;
-        offsetX = (window.innerWidth - BASE_WIDTH * scale) / 2;
-        offsetY = 0;
-    } else {
-        scale = window.innerWidth / BASE_WIDTH;
-        offsetX = 0;
-        offsetY = (window.innerHeight - BASE_HEIGHT * scale) / 2;
-    }
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-
-// Helper to convert game coords to canvas coords
-function toCanvasX(x) { return x * scale + offsetX; }
-function toCanvasY(y) { return y * scale + offsetY; }
-function toCanvasSize(s) { return s * scale; }
 
 let player = {
     x: 50,
@@ -184,13 +156,13 @@ function draw() {
 
     if (!gameStarted) {
         ctx.fillStyle = 'white';
-        ctx.font = `${60 * scale}px Arial`;
+        ctx.font = `60px Arial`;
         ctx.textAlign = 'center';
-        ctx.fillText('Cube Flipper', canvas.width/2, toCanvasY(150));
+        ctx.fillText('Cube Flipper', BASE_WIDTH / 2, 150);
 
-        ctx.font = `${24 * scale}px Arial`;
-        ctx.fillText('Enjoy the game! Made by Ian', canvas.width/2, toCanvasY(220));
-        ctx.fillText('Tap or Press Space to Start', canvas.width/2, toCanvasY(270));
+        ctx.font = `24px Arial`;
+        ctx.fillText('Enjoy the game! Made by Ian', BASE_WIDTH / 2, 220);
+        ctx.fillText('Tap or Press Space to Start', BASE_WIDTH / 2, 270);
         return;
     }
 
@@ -198,44 +170,44 @@ function draw() {
     for (let i = 0; i < BASE_WIDTH; i += 40) {
         ctx.strokeStyle = '#333';
         ctx.beginPath();
-        ctx.moveTo(toCanvasX(i - (frame * 2 % 40)), 0);
-        ctx.lineTo(toCanvasX(i - (frame * 2 % 40)), canvas.height);
+        ctx.moveTo(i - (frame * 2 % 40), 0);
+        ctx.lineTo(i - (frame * 2 % 40), BASE_HEIGHT);
         ctx.stroke();
     }
 
     // Ground
     ctx.fillStyle = '#555';
-    ctx.fillRect(0, toCanvasY(BASE_HEIGHT - 10), canvas.width, toCanvasSize(10));
+    ctx.fillRect(0, BASE_HEIGHT - 10, BASE_WIDTH, 10);
 
     // Player
     ctx.save();
-    ctx.translate(toCanvasX(player.x + player.width/2), toCanvasY(player.y + player.height/2));
+    ctx.translate(player.x + player.width/2, player.y + player.height/2);
     ctx.rotate(player.rotation);
     ctx.fillStyle = '#00ffcc';
-    ctx.fillRect(-toCanvasSize(player.width)/2, -toCanvasSize(player.height)/2, toCanvasSize(player.width), toCanvasSize(player.height));
+    ctx.fillRect(-player.width/2, -player.height/2, player.width, player.height);
     ctx.restore();
 
     // Obstacles
     ctx.fillStyle = '#ff4c4c';
-    obstacles.forEach(ob => ctx.fillRect(toCanvasX(ob.x), toCanvasY(ob.y), toCanvasSize(ob.width), toCanvasSize(ob.height)));
+    obstacles.forEach(ob => ctx.fillRect(ob.x, ob.y, ob.width, ob.height));
 
     // Particles
     particles.forEach(p => {
         ctx.globalAlpha = p.alpha;
         ctx.fillStyle = 'yellow';
-        ctx.fillRect(toCanvasX(p.x), toCanvasY(p.y), toCanvasSize(p.size), toCanvasSize(p.size));
+        ctx.fillRect(p.x, p.y, p.size, p.size);
         ctx.globalAlpha = 1;
     });
 
     // Score
     ctx.fillStyle = 'white';
-    ctx.font = `${20 * scale}px Arial`;
-    ctx.fillText('Score: ' + score, toCanvasX(10), toCanvasY(60));
+    ctx.font = `20px Arial`;
+    ctx.fillText('Score: ' + score, 10, 60);
 
     if (gameOver) {
         ctx.fillStyle = 'white';
-        ctx.font = `${40 * scale}px Arial`;
-        ctx.fillText('Game Over! Tap to Restart', toCanvasX(80), toCanvasY(200));
+        ctx.font = `40px Arial`;
+        ctx.fillText('Game Over! Tap to Restart', 80, 200);
     }
 }
 
