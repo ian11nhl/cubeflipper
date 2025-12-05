@@ -51,7 +51,7 @@ let started = false;
 // obstacles + platforms + end goal
 let levels = [
     {
-        length: 2000,
+        length: 7000,
         obstacles: [
             {x: 400, y: 340, w: 40, h: 60},
             {x: 700, y: 320, w: 50, h: 80},
@@ -62,7 +62,7 @@ let levels = [
         ]
     },
     {
-        length: 2600,
+        length: 8000,
         obstacles: [
             {x: 350, y: 340, w: 50, h: 60},
             {x: 800, y: 320, w: 60, h: 80},
