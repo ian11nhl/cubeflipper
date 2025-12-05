@@ -77,14 +77,33 @@ function jump(){
 document.addEventListener("keydown", e => { if(e.code==="Space") jump(); });
 canvas.addEventListener("mousedown", jump);
 
-// Reset
+canvas.addEventListener("mousedown", ()=>{
+    if(gameOver){
+        resetGame();
+    } else {
+        jump();
+    }
+});
+
+document.addEventListener("keydown", e => {
+    if(e.code === "Space"){
+        if(gameOver){
+            resetGame();
+        } else {
+            jump();
+        }
+    }
+});
+
 function resetGame(){
     obstacles = [];
     spawnObstacle();
+    player.x = 50;          // reset player x position
     player.y = 300;
     player.dy = 0;
     player.rot = 0;
     player.grounded = false;
+    player.rotating = false;
     speed = 4;
     score = 0;
     gameOver = false;
