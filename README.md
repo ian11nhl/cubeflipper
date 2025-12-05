@@ -3,9 +3,8 @@
 <title>Cube Flipper</title>
 <style>
     body {
-        background:black;
         margin:0;
-        overflow:hidden;
+        background:black;
         display:flex;
         justify-content:center;
         align-items:center;
@@ -13,166 +12,119 @@
         color:white;
         font-family:Arial;
     }
+    .container {
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:10px;
+    }
     canvas {
+        background:#111;
         border:2px solid white;
+    }
+    .version {
+        font-size:14px;
+        opacity:0.8;
+        margin-top:5px;
     }
 </style>
 </head>
 <body>
 
-<canvas id="game" width="800" height="400"></canvas>
+<div class="container">
+    <h1>Cube Flipper</h1>
+    <canvas id="game" width="800" height="400"></canvas>
+    <div class="version">Version 1 Beta</div>
+</div>
 
 <script>
 let canvas = document.getElementById("game");
 let ctx = canvas.getContext("2d");
 
 let player = {
-    x: 50,
-    y: 300,
-    size: 30,
-    dy: 0,
-    gravity: 0.6,
-    jumpPower: 15,
-    grounded: false,
-    rotating: false,
-    rot: 0
+    x:50,
+    y:300,
+    size:30,
+    dy:0,
+    gravity:0.6,
+    jumpPower:12,
+    grounded:false
 };
 
-let scrollSpeed = 4;
-let obstacles = [];
-let gameRunning = false;
+let obstacle = {x:600, y:340, w:40, h:60};
+let speed = 4;
 let gameOver = false;
-let inMenu = true;
-let score = 0;
 
-function spawnObstacle() {
-    let height = 40 + Math.random() * 60;
-    let y = canvas.height - height - 20;
-    obstacles.push({ x: 800, y: y, w: 40, h: height });
-}
-
-function jump() {
-    if (player.grounded && !gameOver && gameRunning) {
+function jump(){
+    if(player.grounded && !gameOver){
         player.dy = -player.jumpPower;
-        player.grounded = false;
-        player.rotating = true;
+        player.grounded=false;
     }
 }
 
-document.addEventListener("keydown", e => {
-    if (e.code === "Space") {
-        if (inMenu) {
-            inMenu = false;
-            resetGame();
-        } else {
-            jump();
-        }
-    }
+document.addEventListener("keydown",(e)=>{
+    if(e.code==="Space") jump();
 });
 
-canvas.addEventListener("mousedown", () => {
-    if (inMenu) {
-        inMenu = false;
-        resetGame();
-    } else {
-        jump();
-    }
-});
+canvas.addEventListener("mousedown",()=> jump());
 
-function resetGame() {
-    obstacles = [];
-    spawnObstacle();
-    player.x = 50;
+function resetGame(){
+    obstacle.x = 600;
     player.y = 300;
     player.dy = 0;
-    gameRunning = true;
-    gameOver = false;
-    score = 0;
+    gameOver=false;
 }
 
-function gameLoop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function gameLoop(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    if (inMenu) {
-        ctx.fillStyle = "white";
-        ctx.textAlign = "center";
-        ctx.font = "45px Arial";
-        ctx.fillText("Cube Flipper", canvas.width / 2, 150);
-        ctx.font = "25px Arial";
-        ctx.fillText("Enjoy the game made by Ian", canvas.width / 2, 200);
-        ctx.fillText("Click or Press Space to Start", canvas.width / 2, 260);
-        requestAnimationFrame(gameLoop);
-        return;
-    }
+    if(!gameOver){
+        obstacle.x -= speed;
 
-    if (gameRunning) {
-        score++;
+        if(obstacle.x < -50){
+            obstacle.x = 800 + Math.random()*200;
+        }
 
         player.dy += player.gravity;
         player.y += player.dy;
 
-        let ground = canvas.height - 20 - player.size;
-        if (player.y >= ground) {
-            player.y = ground;
+        let ground = 340;
+        if(player.y + player.size >= ground){
+            player.y = ground - player.size;
             player.dy = 0;
-            player.grounded = true;
-            player.rotating = false;
-            player.rot = 0;
+            player.grounded=true;
         }
 
-        for (let o of obstacles) {
-            o.x -= scrollSpeed;
-
-            if (
-                player.x < o.x + o.w &&
-                player.x + player.size > o.x &&
-                player.y < o.y + o.h &&
-                player.y + player.size > o.y
-            ) {
-                gameRunning = false;
-                gameOver = true;
-            }
-        }
-
-        if (obstacles[obstacles.length - 1].x < 300) {
-            spawnObstacle();
-        }
-
-        if (obstacles[0].x < -50) {
-            obstacles.shift();
+        if(
+            player.x < obstacle.x + obstacle.w &&
+            player.x + player.size > obstacle.x &&
+            player.y < obstacle.y + obstacle.h &&
+            player.y + player.size > obstacle.y
+        ){
+            gameOver=true;
         }
     }
 
-    if (player.rotating) player.rot += 0.25;
-    ctx.save();
-    ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
-    ctx.rotate(player.rot);
-    ctx.fillStyle = "blue";
-    ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
-    ctx.restore();
+    ctx.fillStyle="blue";
+    ctx.fillRect(player.x, player.y, player.size, player.size);
 
-    ctx.fillStyle = "red";
-    for (let o of obstacles) {
-        ctx.fillRect(o.x, o.y, o.w, o.h);
-    }
+    ctx.fillStyle="red";
+    ctx.fillRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h);
 
-    ctx.fillStyle = "white";
-    ctx.font = "20px Arial";
-    ctx.textAlign = "left";
-    ctx.fillText("Score: " + score, 10, 27);
+    if(gameOver){
+        ctx.fillStyle="white";
+        ctx.font="40px Arial";
+        ctx.textAlign="center";
+        ctx.fillText("Game Over", canvas.width/2, canvas.height/2);
+        ctx.font="20px Arial";
+        ctx.fillText("Click to Restart", canvas.width/2, canvas.height/2 + 40);
 
-    if (gameOver) {
-        ctx.textAlign = "center";
-        ctx.font = "40px Arial";
-        ctx.fillText("Game Over! Tap to Restart", canvas.width / 2, canvas.height / 2);
         canvas.addEventListener("mousedown", resetGame);
-        document.addEventListener("keydown", e => { if (e.code === "Space") resetGame(); });
     }
 
     requestAnimationFrame(gameLoop);
 }
 
-spawnObstacle();
 gameLoop();
 </script>
 
