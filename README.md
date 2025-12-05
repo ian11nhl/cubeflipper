@@ -47,74 +47,126 @@ let player = {
     size:30,
     dy:0,
     gravity:0.6,
-    jumpPower:12,
-    grounded:false
+    jumpPower:15,
+    grounded:false,
+    rotating:false,
+    rot:0
 };
 
-let obstacle = {x:600, y:340, w:40, h:60};
+let obstacles = [];
 let speed = 4;
+let score = 0;
 let gameOver = false;
 
+// Create a random obstacle
+function spawnObstacle() {
+    let height = 40 + Math.random()*80;
+    let y = canvas.height - 20 - height;
+    obstacles.push({x:canvas.width, y:y, w:40, h:height});
+}
+
+// Jump
 function jump(){
     if(player.grounded && !gameOver){
         player.dy = -player.jumpPower;
         player.grounded=false;
+        player.rotating=true;
     }
 }
 
-document.addEventListener("keydown",(e)=>{
-    if(e.code==="Space") jump();
-});
+document.addEventListener("keydown", e => { if(e.code==="Space") jump(); });
+canvas.addEventListener("mousedown", jump);
 
-canvas.addEventListener("mousedown",()=> jump());
-
+// Reset
 function resetGame(){
-    obstacle.x = 600;
+    obstacles = [];
+    spawnObstacle();
     player.y = 300;
     player.dy = 0;
-    gameOver=false;
+    player.rot = 0;
+    player.grounded = false;
+    speed = 4;
+    score = 0;
+    gameOver = false;
 }
 
+// Game loop
 function gameLoop(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
     if(!gameOver){
-        obstacle.x -= speed;
+        // Move obstacles
+        obstacles.forEach(ob => { ob.x -= speed; });
 
-        if(obstacle.x < -50){
-            obstacle.x = 800 + Math.random()*200;
+        // Spawn new obstacles
+        if(obstacles[obstacles.length-1].x < canvas.width - 250){
+            spawnObstacle();
         }
 
+        // Remove off-screen obstacles
+        if(obstacles[0].x < -50){
+            obstacles.shift();
+        }
+
+        // Update player
         player.dy += player.gravity;
         player.y += player.dy;
 
-        let ground = 340;
-        if(player.y + player.size >= ground){
-            player.y = ground - player.size;
+        let ground = canvas.height - 20 - player.size;
+        if(player.y > ground){
+            player.y = ground;
             player.dy = 0;
-            player.grounded=true;
+            player.grounded = true;
+            player.rot = 0;
+            player.rotating=false;
         }
 
-        if(
-            player.x < obstacle.x + obstacle.w &&
-            player.x + player.size > obstacle.x &&
-            player.y < obstacle.y + obstacle.h &&
-            player.y + player.size > obstacle.y
-        ){
-            gameOver=true;
-        }
+        // Collision
+        obstacles.forEach(ob => {
+            if(player.x < ob.x + ob.w &&
+               player.x + player.size > ob.x &&
+               player.y < ob.y + ob.h &&
+               player.y + player.size > ob.y){
+                gameOver = true;
+            }
+        });
+
+        // Rotate player if jumping
+        if(player.rotating) player.rot += 0.25;
+
+        // Increase speed gradually
+        speed = 4 + score/1000;
+
+        score++;
     }
 
-    ctx.fillStyle="blue";
-    ctx.fillRect(player.x, player.y, player.size, player.size);
+    // Draw player
+    ctx.save();
+    ctx.translate(player.x + player.size/2, player.y + player.size/2);
+    ctx.rotate(player.rot);
+    ctx.fillStyle = "cyan";
+    ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
+    ctx.restore();
 
-    ctx.fillStyle="red";
-    ctx.fillRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h);
+    // Draw obstacles
+    ctx.fillStyle = "red";
+    obstacles.forEach(ob => {
+        ctx.fillRect(ob.x, ob.y, ob.w, ob.h);
+    });
+
+    // Draw ground
+    ctx.fillStyle = "green";
+    ctx.fillRect(0, canvas.height-20, canvas.width, 20);
+
+    // Draw score
+    ctx.fillStyle = "white";
+    ctx.font="20px Arial";
+    ctx.textAlign="left";
+    ctx.fillText("Score: " + score, 10, 27);
 
     if(gameOver){
-        ctx.fillStyle="white";
-        ctx.font="40px Arial";
         ctx.textAlign="center";
+        ctx.font="40px Arial";
         ctx.fillText("Game Over", canvas.width/2, canvas.height/2);
         ctx.font="20px Arial";
         ctx.fillText("Click to Restart", canvas.width/2, canvas.height/2 + 40);
@@ -125,6 +177,8 @@ function gameLoop(){
     requestAnimationFrame(gameLoop);
 }
 
+// Start
+spawnObstacle();
 gameLoop();
 </script>
 
