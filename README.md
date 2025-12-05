@@ -26,200 +26,221 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-const BASE_WIDTH = 800;
-const BASE_HEIGHT = 400;
+const W = 800, H = 400;
 
+// player
 let player = {
     x: 50,
     y: 300,
-    width: 30,
-    height: 30,
+    size: 30,
     dy: 0,
+    gravity: 0.6,
     jumpPower: 12,
     grounded: false,
-    rotation: 0,
-    jumping: false
+    rotating: false,
+    rot: 0
 };
 
-let gravity = 0.6;
-let obstacles = [];
-let gameSpeed = 6;
-let frame = 0;
+// Game states
+let levelIndex = 0;
+let levelComplete = false;
 let gameOver = false;
-let score = 0;
-let particles = [];
-let gameStarted = false;
+let started = false;
 
-// Jump / start handler
+// LEVEL DATA
+// obstacles + platforms + end goal
+let levels = [
+    {
+        length: 2000,
+        obstacles: [
+            {x: 400, y: 340, w: 40, h: 60},
+            {x: 700, y: 320, w: 50, h: 80},
+            {x: 1100, y: 340, w: 40, h: 60}
+        ],
+        platforms: [
+            {x: 900, y: 280, w: 100, h: 20}
+        ]
+    },
+    {
+        length: 2600,
+        obstacles: [
+            {x: 350, y: 340, w: 50, h: 60},
+            {x: 800, y: 320, w: 60, h: 80},
+            {x: 1300, y: 340, w: 50, h: 60},
+            {x: 1800, y: 330, w: 70, h: 70}
+        ],
+        platforms: [
+            {x: 600, y: 260, w: 120, h: 20},
+            {x: 1400, y: 260, w: 100, h: 20},
+        ]
+    }
+];
+
+let scroll = 0;
+
+// controls
 function jump() {
-    if (!gameStarted) {
-        gameStarted = true;
+    if (!started) {
+        started = true;
+        return;
+    }
+    if (gameOver || levelComplete) {
+        restart();
         return;
     }
     if (player.grounded) {
         player.dy = -player.jumpPower;
         player.grounded = false;
-        player.jumping = true;
+        player.rotating = true;
     }
-    if (gameOver) resetGame();
 }
-document.addEventListener('keydown', e => { if (e.code === 'Space' || e.code === 'ArrowUp') jump(); });
-canvas.addEventListener('mousedown', jump);
-canvas.addEventListener('touchstart', jump);
+document.addEventListener("keydown", e => {
+    if (e.code === "Space" || e.code === "ArrowUp") jump();
+});
+canvas.addEventListener("mousedown", jump);
 
-// Spawn obstacles
-function spawnObstacle() {
-    const height = 20 + Math.random() * 60;
-    const width = 20 + Math.random() * 40;
-    obstacles.push({ x: BASE_WIDTH, y: BASE_HEIGHT - height, width, height });
-}
-
-// Reset game
-function resetGame() {
+// reset
+function restart() {
+    player.x = 50;
     player.y = 300;
     player.dy = 0;
-    player.rotation = 0;
-    player.jumping = false;
-    obstacles = [];
-    frame = 0;
+    scroll = 0;
+    player.rot = 0;
+    player.rotating = false;
     gameOver = false;
-    gameSpeed = 6;
-    score = 0;
-    particles = [];
-    gameStarted = false;
+    levelComplete = false;
 }
 
-// Create landing particles
-function createParticles(x, y) {
-    for (let i = 0; i < 10; i++) {
-        particles.push({
-            x: x,
-            y: y,
-            dx: (Math.random() - 0.5) * 4,
-            dy: Math.random() * -2,
-            alpha: 1,
-            size: 3 + Math.random() * 3
-        });
-    }
-}
-
-// Update game state
+// update logic
 function update() {
-    if (!gameStarted || gameOver) return;
+    if (!started || gameOver || levelComplete) return;
 
-    player.dy += gravity;
+    scroll += 4;
+
+    player.dy += player.gravity;
     player.y += player.dy;
 
-    if (!player.grounded && player.jumping) {
-        player.rotation += 0.3;
+    if (player.rotating) {
+        player.rot += 0.3;
     }
 
-    if (player.y + player.height >= BASE_HEIGHT) {
-        if (!player.grounded) createParticles(player.x + player.width/2, BASE_HEIGHT - 5);
-        player.y = BASE_HEIGHT - player.height;
+    // ground collision
+    if (player.y + player.size > H) {
+        player.y = H - player.size;
         player.dy = 0;
         player.grounded = true;
-        player.rotation = 0;
-        player.jumping = false;
+        player.rot = 0;
+        player.rotating = false;
     }
 
-    if (frame % 80 === 0) spawnObstacle();
-    obstacles.forEach(ob => ob.x -= gameSpeed);
-    obstacles = obstacles.filter(ob => ob.x + ob.width > 0);
+    let lvl = levels[levelIndex];
 
-    for (let ob of obstacles) {
-        if (player.x < ob.x + ob.width &&
-            player.x + player.width > ob.x &&
-            player.y < ob.y + ob.height &&
-            player.y + player.height > ob.y) {
+    // platform collisions
+    for (let p of lvl.platforms) {
+        let px = p.x - scroll;
+        if (player.x < px + p.w &&
+            player.x + player.size > px &&
+            player.y + player.size > p.y &&
+            player.y + player.size < p.y + p.h + 10 &&
+            player.dy >= 0) {
+            player.y = p.y - player.size;
+            player.dy = 0;
+            player.grounded = true;
+            player.rot = 0;
+            player.rotating = false;
+        }
+    }
+
+    // obstacle collisions
+    for (let ob of lvl.obstacles) {
+        let ox = ob.x - scroll;
+        if (player.x < ox + ob.w &&
+            player.x + player.size > ox &&
+            player.y < ob.y + ob.h &&
+            player.y + player.size > ob.y) {
             gameOver = true;
         }
     }
 
-    particles.forEach(p => {
-        p.x += p.dx;
-        p.y += p.dy;
-        p.dy += 0.1;
-        p.alpha -= 0.03;
-    });
-    particles = particles.filter(p => p.alpha > 0);
-
-    if (frame % 300 === 0) gameSpeed += 0.5;
-
-    score = Math.floor(frame / 5);
-    frame++;
+    // finish line
+    if (scroll >= lvl.length) {
+        levelComplete = true;
+        levelIndex = (levelIndex + 1) % levels.length;
+    }
 }
 
-// Draw everything
+// draw function
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0,0,W,H);
 
-    if (!gameStarted) {
-        ctx.fillStyle = 'white';
-        ctx.font = `60px Arial`;
-        ctx.textAlign = 'center';
-        ctx.fillText('Cube Flipper', BASE_WIDTH / 2, 150);
-
-        ctx.font = `24px Arial`;
-        ctx.fillText('Enjoy the game! Made by Ian', BASE_WIDTH / 2, 220);
-        ctx.fillText('Tap or Press Space to Start', BASE_WIDTH / 2, 270);
+    // title screen
+    if (!started) {
+        ctx.fillStyle = "white";
+        ctx.font = "60px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Cube Flipper", W/2, 150);
+        ctx.font = "24px Arial";
+        ctx.fillText("Enjoy the game! Made by Ian", W/2, 210);
+        ctx.fillText("Click or Space to Start", W/2, 270);
         return;
     }
 
-    // Background grid
-    for (let i = 0; i < BASE_WIDTH; i += 40) {
-        ctx.strokeStyle = '#333';
-        ctx.beginPath();
-        ctx.moveTo(i - (frame * 2 % 40), 0);
-        ctx.lineTo(i - (frame * 2 % 40), BASE_HEIGHT);
-        ctx.stroke();
+    // ground
+    ctx.fillStyle = "#555";
+    ctx.fillRect(0, H-10, W, 10);
+
+    let lvl = levels[levelIndex];
+
+    // platforms
+    ctx.fillStyle = "#00aaff";
+    for (let p of lvl.platforms) {
+        ctx.fillRect(p.x - scroll, p.y, p.w, p.h);
     }
 
-    // Ground
-    ctx.fillStyle = '#555';
-    ctx.fillRect(0, BASE_HEIGHT - 10, BASE_WIDTH, 10);
+    // obstacles
+    ctx.fillStyle = "#ff4c4c";
+    for (let ob of lvl.obstacles) {
+        ctx.fillRect(ob.x - scroll, ob.y, ob.w, ob.h);
+    }
 
-    // Player
+    // player cube with rotation
     ctx.save();
-    ctx.translate(player.x + player.width/2, player.y + player.height/2);
-    ctx.rotate(player.rotation);
-    ctx.fillStyle = '#00ffcc';
-    ctx.fillRect(-player.width/2, -player.height/2, player.width, player.height);
+    ctx.translate(player.x + player.size/2, player.y + player.size/2);
+    ctx.rotate(player.rot);
+    ctx.fillStyle = "#00ffcc";
+    ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
     ctx.restore();
 
-    // Obstacles
-    ctx.fillStyle = '#ff4c4c';
-    obstacles.forEach(ob => ctx.fillRect(ob.x, ob.y, ob.width, ob.height));
+    // finish line
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(lvl.length - scroll, 0, 10, H);
 
-    // Particles
-    particles.forEach(p => {
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = 'yellow';
-        ctx.fillRect(p.x, p.y, p.size, p.size);
-        ctx.globalAlpha = 1;
-    });
+    // text overlays
+    if (levelComplete) {
+        ctx.fillStyle = "white";
+        ctx.font = "40px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Level Complete!", W/2, 190);
+        ctx.font = "25px Arial";
+        ctx.fillText("Click to load next level", W/2, 240);
+    }
 
-    // Score (top-left, safe)
-    ctx.fillStyle = 'white';
-    ctx.font = `20px Arial`;
-    ctx.textAlign = 'left';
-    ctx.fillText('Score: ' + score, 10, 30);
-
-    // Game Over (centered)
     if (gameOver) {
-        ctx.fillStyle = 'white';
-        ctx.font = `40px Arial`;
-        ctx.textAlign = 'center';
-        ctx.fillText('Game Over! Tap to Restart', BASE_WIDTH / 2, BASE_HEIGHT / 2);
+        ctx.fillStyle = "white";
+        ctx.font = "40px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Game Over", W/2, 190);
+        ctx.font = "25px Arial";
+        ctx.fillText("Click to Restart", W/2, 240);
     }
 }
 
+// loop
 function loop() {
     update();
     draw();
     requestAnimationFrame(loop);
 }
-
 loop();
 </script>
 </body>
