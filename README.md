@@ -35,7 +35,7 @@ let player = {
     size: 30,
     dy: 0,
     gravity: 0.6,
-    jumpPower: 15,
+    jumpPower: 19,
     grounded: false,
     rotating: false,
     rot: 0
